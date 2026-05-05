@@ -33,6 +33,12 @@ importers:
         specifier: ^3.5.0
         version: 3.5.0
     devDependencies:
+      '@eslint/compat':
+        specifier: ^2.0.5
+        version: 2.0.5(eslint@10.3.0(jiti@2.6.1))
+      '@eslint/js':
+        specifier: ^10.0.1
+        version: 10.0.1(eslint@10.3.0(jiti@2.6.1))
       '@tailwindcss/postcss':
         specifier: ^4.2.4
         version: 4.2.4
@@ -54,9 +60,18 @@ importers:
       eslint-config-next:
         specifier: 16.2.4
         version: 16.2.4(@typescript-eslint/parser@8.59.2(eslint@10.3.0(jiti@2.6.1))(typescript@6.0.3))(eslint@10.3.0(jiti@2.6.1))(typescript@6.0.3)
+      eslint-plugin-import:
+        specifier: ^2.32.0
+        version: 2.32.0(@typescript-eslint/parser@8.59.2(eslint@10.3.0(jiti@2.6.1))(typescript@6.0.3))(eslint-import-resolver-typescript@3.10.1)(eslint@10.3.0(jiti@2.6.1))
       postcss:
         specifier: ^8.5.13
         version: 8.5.14
+      prettier:
+        specifier: ^3.8.3
+        version: 3.8.3
+      prettier-plugin-tailwindcss:
+        specifier: ^0.8.0
+        version: 0.8.0(prettier@3.8.3)
       tailwindcss:
         specifier: ^4.2.4
         version: 4.2.4
@@ -312,6 +327,15 @@ packages:
     resolution: {integrity: sha512-EriSTlt5OC9/7SXkRSCAhfSxxoSUgBm33OH+IkwbdpgoqsSsUg7y3uh+IICI/Qg4BBWr3U2i39RpmycbxMq4ew==}
     engines: {node: ^12.0.0 || ^14.0.0 || >=16.0.0}
 
+  '@eslint/compat@2.0.5':
+    resolution: {integrity: sha512-IbHDbHJfkVNv6xjlET8AIVo/K1NQt7YT4Rp6ok/clyBGcpRx1l6gv0Rq3vBvYfPJIZt6ODf66Zq08FJNDpnzgg==}
+    engines: {node: ^20.19.0 || ^22.13.0 || >=24}
+    peerDependencies:
+      eslint: ^8.40 || 9 || 10
+    peerDependenciesMeta:
+      eslint:
+        optional: true
+
   '@eslint/config-array@0.23.5':
     resolution: {integrity: sha512-Y3kKLvC1dvTOT+oGlqNQ1XLqK6D1HU2YXPc52NmAlJZbMMWDzGYXMiPRJ8TYD39muD/OTjlZmNJ4ib7dvSrMBA==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
@@ -323,6 +347,15 @@ packages:
   '@eslint/core@1.2.1':
     resolution: {integrity: sha512-MwcE1P+AZ4C6DWlpin/OmOA54mmIZ/+xZuJiQd4SyB29oAJjN30UW9wkKNptW2ctp4cEsvhlLY/CsQ1uoHDloQ==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
+
+  '@eslint/js@10.0.1':
+    resolution: {integrity: sha512-zeR9k5pd4gxjZ0abRoIaxdc7I3nDktoXZk2qOv9gCNWx3mVwEn32VRhyLaRsDiJjTs0xq/T8mfPtyuXu7GWBcA==}
+    engines: {node: ^20.19.0 || ^22.13.0 || >=24}
+    peerDependencies:
+      eslint: ^10.0.0
+    peerDependenciesMeta:
+      eslint:
+        optional: true
 
   '@eslint/object-schema@3.0.5':
     resolution: {integrity: sha512-vqTaUEgxzm+YDSdElad6PiRoX4t8VGDjCtt05zn4nU810UIx/uNEV7/lZJ6KwFThKZOzOxzXy48da+No7HZaMw==}
@@ -2700,6 +2733,66 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
+  prettier-plugin-tailwindcss@0.8.0:
+    resolution: {integrity: sha512-V8ITGH87yuBDF6JpEZTOVlUz/saAwqb8f3HRgUj8Lh+tGCcrmorhsLpYqzygwFwK0PE2Ib6Mv3M7T/uE2tZV1g==}
+    engines: {node: '>=20.19'}
+    peerDependencies:
+      '@ianvs/prettier-plugin-sort-imports': '*'
+      '@prettier/plugin-hermes': '*'
+      '@prettier/plugin-oxc': '*'
+      '@prettier/plugin-pug': '*'
+      '@shopify/prettier-plugin-liquid': '*'
+      '@trivago/prettier-plugin-sort-imports': '*'
+      '@zackad/prettier-plugin-twig': '*'
+      prettier: ^3.0
+      prettier-plugin-astro: '*'
+      prettier-plugin-css-order: '*'
+      prettier-plugin-jsdoc: '*'
+      prettier-plugin-marko: '*'
+      prettier-plugin-multiline-arrays: '*'
+      prettier-plugin-organize-attributes: '*'
+      prettier-plugin-organize-imports: '*'
+      prettier-plugin-sort-imports: '*'
+      prettier-plugin-svelte: '*'
+    peerDependenciesMeta:
+      '@ianvs/prettier-plugin-sort-imports':
+        optional: true
+      '@prettier/plugin-hermes':
+        optional: true
+      '@prettier/plugin-oxc':
+        optional: true
+      '@prettier/plugin-pug':
+        optional: true
+      '@shopify/prettier-plugin-liquid':
+        optional: true
+      '@trivago/prettier-plugin-sort-imports':
+        optional: true
+      '@zackad/prettier-plugin-twig':
+        optional: true
+      prettier-plugin-astro:
+        optional: true
+      prettier-plugin-css-order:
+        optional: true
+      prettier-plugin-jsdoc:
+        optional: true
+      prettier-plugin-marko:
+        optional: true
+      prettier-plugin-multiline-arrays:
+        optional: true
+      prettier-plugin-organize-attributes:
+        optional: true
+      prettier-plugin-organize-imports:
+        optional: true
+      prettier-plugin-sort-imports:
+        optional: true
+      prettier-plugin-svelte:
+        optional: true
+
+  prettier@3.8.3:
+    resolution: {integrity: sha512-7igPTM53cGHMW8xWuVTydi2KO233VFiTNyF5hLJqpilHfmn8C8gPf+PS7dUT64YcXFbiMGZxS9pCSxL/Dxm/Jw==}
+    engines: {node: '>=14'}
+    hasBin: true
+
   prop-types@15.8.1:
     resolution: {integrity: sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==}
 
@@ -3367,6 +3460,12 @@ snapshots:
 
   '@eslint-community/regexpp@4.12.2': {}
 
+  '@eslint/compat@2.0.5(eslint@10.3.0(jiti@2.6.1))':
+    dependencies:
+      '@eslint/core': 1.2.1
+    optionalDependencies:
+      eslint: 10.3.0(jiti@2.6.1)
+
   '@eslint/config-array@0.23.5':
     dependencies:
       '@eslint/object-schema': 3.0.5
@@ -3382,6 +3481,10 @@ snapshots:
   '@eslint/core@1.2.1':
     dependencies:
       '@types/json-schema': 7.0.15
+
+  '@eslint/js@10.0.1(eslint@10.3.0(jiti@2.6.1))':
+    optionalDependencies:
+      eslint: 10.3.0(jiti@2.6.1)
 
   '@eslint/object-schema@3.0.5': {}
 
@@ -6206,6 +6309,12 @@ snapshots:
       source-map-js: 1.2.1
 
   prelude-ls@1.2.1: {}
+
+  prettier-plugin-tailwindcss@0.8.0(prettier@3.8.3):
+    dependencies:
+      prettier: 3.8.3
+
+  prettier@3.8.3: {}
 
   prop-types@15.8.1:
     dependencies:
