@@ -2,5 +2,21 @@
   "$schema": "https://ui.shadcn.com/schema/registry.json",
   "name": "izakcode",
   "homepage": "https://shadcn-registry.izakcode.com",
-  "items": []
+  "items": [
+    {
+      "name": "generic-input",
+      "type": "registry:ui",
+      "title": "Generic Input",
+      "description": "A reusable react-hook-form input field with label, description, errors, icons, and password visibility support.",
+      "dependencies": ["lucide-react", "react-hook-form"],
+      "registryDependencies": ["input", "field"],
+      "files": [
+        {
+          "path": "src/registry/new-york/ui/generic-input/generic-input.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "categories": ["forms", "input"]
+    }
+  ]
 }
