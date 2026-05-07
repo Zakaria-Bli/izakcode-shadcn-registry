@@ -59,7 +59,7 @@ export const config = {
   matcher: [
     {
       source:
-        "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|llms.txt|llms-full.txt|llms.mdx/docs|og/docs).*)",
+        "/((?!api|_next|__nextjs|favicon.ico|robots.txt|sitemap.xml|llms.txt|llms-full.txt|llms.mdx/docs|og/docs).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },
