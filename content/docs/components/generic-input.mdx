@@ -1,0 +1,1091 @@
+---
+title: Generic Input
+description: A reusable form input that integrates with react-hook-form via useFormContext. Supports label auto-generation, description, error display, leading icons, password visibility toggle, and numeric value coercion.
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps"
+import { Tab, Tabs } from "fumadocs-ui/components/tabs"
+import { TypeTable } from "fumadocs-ui/components/type-table"
+import GenericInputDemo from "@/registry/new-york/ui/generic-input/examples/generic-input-demo"
+import GenericInputBasic from "@/registry/new-york/ui/generic-input/examples/generic-input-basic"
+import GenericInputPassword from "@/registry/new-york/ui/generic-input/examples/generic-input-password"
+import GenericInputNumeric from "@/registry/new-york/ui/generic-input/examples/generic-input-numeric"
+import GenericInputIcon from "@/registry/new-york/ui/generic-input/examples/generic-input-icon"
+import GenericInputZod from "@/registry/new-york/ui/generic-input/examples/generic-input-zod"
+
+<Tabs items={['Preview', 'Code']}>
+  <Tab value="Preview" className="flex h-[500px] items-center justify-center overflow-auto px-4">
+    <div className="w-full">
+      <GenericInputDemo />
+    </div>
+  </Tab>
+  <Tab value="Code">
+
+```tsx file="generic-input-demo.tsx"
+"use client"
+
+import { useForm, FormProvider } from "react-hook-form"
+
+import { Button } from "@/components/ui/button"
+import { GenericInput } from "@/registry/new-york/ui/generic-input/generic-input"
+
+interface FormValues {
+  username: string
+  email: string
+}
+
+export default function GenericInputDemo() {
+  const form = useForm<FormValues>({
+    defaultValues: {
+      username: "",
+      email: "",
+    },
+  })
+
+  function onSubmit(data: FormValues) {
+    console.log(data)
+  }
+
+  return (
+    <FormProvider {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="mx-auto w-full max-w-sm space-y-4">
+        <GenericInput<FormValues>
+          name="username"
+          label="Username"
+          description="This is your public display name."
+          required
+        />
+        <GenericInput<FormValues>
+          name="email"
+          label="Email"
+          type="email"
+          optionalLabel="Optional"
+        />
+        <Button type="submit" className="w-full">
+          Submit
+        </Button>
+      </form>
+    </FormProvider>
+  )
+}
+```
+
+  </Tab>
+</Tabs>
+
+## Installation
+
+<Tabs items={['CLI', 'Manual']} type="underlined" className="border-0 bg-transparent shadow-none p-0">
+  <Tab value="CLI">
+
+```package-install
+npx shadcn@latest add @izakcode/generic-input
+```
+
+  </Tab>
+  <Tab value="Manual">
+    <Steps>
+      <Step>
+Install the required shadcn primitives:
+
+```package-install
+npx shadcn@latest add input field
+```
+
+      </Step>
+      <Step>
+
+Install peer dependencies:
+
+```package-install
+react-hook-form lucide-react
+```
+
+      </Step>
+      <Step>
+
+Copy and paste the following code into your project.
+
+```tsx file="generic-input.tsx" title="components/ui/generic-input.tsx"
+"use client"
+
+import { Eye, EyeOff } from "lucide-react"
+import * as React from "react"
+import { FieldValues, Path, useFormContext } from "react-hook-form"
+
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
+
+type GenericInputProps<TFieldValues extends FieldValues> = Omit<
+  React.ComponentProps<"input">,
+  "name" | "onChange" | "onBlur"
+> & {
+  name: Path<TFieldValues>
+  label?: React.ReactNode
+  description?: React.ReactNode
+  required?: boolean
+  /**
+   * Label appended to the field label when the field is not required.
+   * Pass `null` (or an empty string) to suppress the label entirely (useful for dense forms where
+   * every field is optional and the annotation would be redundant).
+   * Defaults to `null` - you must opt in by passing e.g. `optionalLabel="Optional"`.
+   */
+  optionalLabel?: React.ReactNode | null
+  /**
+   * Visually disables the input without clearing its value on submit.
+   *
+   * Unlike passing `disabled` directly to react-hook-form's `register()`,
+   * this prop only sets the native `disabled` attribute on the `<input>`
+   * element. The field value is preserved in form state and included in
+   * submitted data.
+   *
+   * @default false
+   */
+  disabled?: boolean
+  /**
+   * When `true`, coerces the input value to a `number` via `setValueAs`.
+   * Empty strings and non-numeric values resolve to `null`.
+   *
+   * @default false
+   */
+  returnAsNumber?: boolean
+  icon?: React.ReactNode
+  showPasswordLabel?: string
+  hidePasswordLabel?: string
+  /** Forwarded to react-hook-form's `register()` onChange handler. */
+  onChange?: React.ChangeEventHandler<HTMLInputElement>
+  /** Forwarded to react-hook-form's `register()` onBlur handler. */
+  onBlur?: React.FocusEventHandler<HTMLInputElement>
+}
+
+/**
+ * Derives a human-readable label from a react-hook-form field path.
+ *
+ * - Splits on `.` and discards pure-numeric segments (array indices).
+ * - Falls back to the last segment if every segment is numeric.
+ * - Returns the generic string "Field" only as a last resort; callers should
+ *   always supply an explicit `label` prop for paths that might resolve poorly.
+ */
+function getLabelFromName(name: string): string {
+  const segments = name.split(".")
+  // Prefer the last non-numeric segment so "items.0.firstName" -> "First Name"
+  const lastMeaningful = segments.findLast((s) => !/^\d+$/.test(s)) ?? segments.at(-1) ?? name
+
+  const formatted = lastMeaningful
+    .replace(/\[.*?\]/g, "")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([a-zA-Z])(\d+)/g, "$1 $2")
+    .replace(/[_-]/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+
+  return formatted || "Field"
+}
+
+function mergeRefs<T>(...refs: (React.Ref<T> | undefined)[]): React.RefCallback<T> {
+  return (node) => {
+    for (const ref of refs) {
+      if (typeof ref === "function") {
+        ref(node)
+      } else if (ref != null) {
+        ;(ref as React.RefObject<T | null>).current = node
+      }
+    }
+  }
+}
+
+/**
+ * A reusable form input that integrates with react-hook-form via `useFormContext`.
+ *
+ * Must be rendered inside a `FormProvider`. Supports label auto-generation,
+ * description, error display, leading icons, password visibility toggle,
+ * and numeric value coercion.
+ *
+ * @example
+ * // Basic usage
+ * <GenericInput<MyFormValues> name="email" required />
+ *
+ * @example
+ * // Show "Optional" annotation on non-required fields
+ * <GenericInput<MyFormValues> name="nickname" optionalLabel="Optional" />
+ *
+ * @example
+ * // Suppress the optional annotation entirely
+ * <GenericInput<MyFormValues> name="middleName" optionalLabel={null} />
+ */
+export function GenericInput<TFieldValues extends FieldValues>({
+  name,
+  ref,
+  id,
+  label,
+  className,
+  required,
+  // Default to null so optional labels are opt-in, not opt-out.
+  // Consumers who want the annotation must pass e.g. optionalLabel="Optional".
+  optionalLabel = null,
+  disabled = false,
+  description,
+  returnAsNumber = false,
+  icon,
+  type,
+  showPasswordLabel = "Show password",
+  hidePasswordLabel = "Hide password",
+  onBlur,
+  onChange,
+  ...props
+}: GenericInputProps<TFieldValues>) {
+  // Guard: fail fast with a clear developer error if this component
+  // is accidentally used outside a FormProvider.
+  const form = useFormContext<TFieldValues>()
+  if (!form) {
+    throw new Error(
+      "<GenericInput> must be rendered inside a react-hook-form <FormProvider>. " +
+        `No FormProvider was found in the component tree for field "${name}".`
+    )
+  }
+
+  const { register, formState } = form
+  const [showPassword, setShowPassword] = React.useState(false)
+
+  const togglePassword = React.useCallback(() => setShowPassword((current) => !current), [])
+
+  const fieldName = name as string
+  const inputId = id ?? fieldName
+  const fieldState = form.getFieldState(name, formState)
+  const fieldError = fieldState.error
+  const errorId = fieldError ? `${inputId}-error` : undefined
+  const descriptionId = description ? `${inputId}-description` : undefined
+  const isPasswordField = type === "password"
+  const inputType = isPasswordField && showPassword ? "text" : type
+  const shouldRenderOptionalLabel =
+    !required &&
+    optionalLabel != null &&
+    (typeof optionalLabel !== "string" || optionalLabel.trim().length > 0)
+  const describedBy = [descriptionId, errorId].filter(Boolean).join(" ")
+
+  const { ref: registerRef, ...restRegistration } = register(name, {
+    onBlur,
+    onChange,
+    required,
+    setValueAs: returnAsNumber
+      ? (value) => {
+          if (typeof value === "string" && value.trim() === "") {
+            return null
+          }
+          const numericValue = Number(value)
+          return Number.isNaN(numericValue) ? null : numericValue
+        }
+      : undefined,
+  })
+
+  return (
+    <Field data-disabled={disabled ? true : undefined} data-invalid={fieldError ? true : undefined}>
+      <FieldLabel htmlFor={inputId} className="flex items-center gap-1">
+        {label ?? getLabelFromName(fieldName)}
+        {required ? (
+          <span className="text-destructive" aria-label="required">
+            *
+          </span>
+        ) : shouldRenderOptionalLabel ? (
+          <span className="text-muted-foreground" aria-label="optional">
+            {optionalLabel}
+          </span>
+        ) : null}
+      </FieldLabel>
+
+      <div className="relative">
+        {icon ? (
+          <div className="text-muted-foreground pointer-events-none absolute inset-s-3 top-1/2 -translate-y-1/2">
+            {icon}
+          </div>
+        ) : null}
+        <Input
+          id={inputId}
+          ref={mergeRefs(ref, registerRef)}
+          type={inputType}
+          className={cn(icon && "ps-10", isPasswordField && "pe-10", className)}
+          disabled={disabled}
+          aria-required={required || undefined}
+          aria-invalid={fieldError ? true : undefined}
+          aria-describedby={describedBy || undefined}
+          {...props}
+          {...restRegistration}
+        />
+        {isPasswordField ? (
+          <button
+            type="button"
+            onClick={togglePassword}
+            disabled={disabled}
+            className="text-muted-foreground hover:text-foreground absolute inset-e-3 top-1/2 -translate-y-1/2 transition-colors disabled:pointer-events-none disabled:opacity-50"
+            aria-label={showPassword ? hidePasswordLabel : showPasswordLabel}
+            aria-pressed={showPassword}
+            aria-controls={inputId}
+          >
+            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
+        ) : null}
+      </div>
+
+      {description ? <FieldDescription id={descriptionId}>{description}</FieldDescription> : null}
+
+      {fieldError ? <FieldError id={errorId} errors={[fieldError]} /> : null}
+    </Field>
+  )
+}
+```
+
+      </Step>
+    </Steps>
+
+  </Tab>
+</Tabs>
+
+## Features
+
+<Cards>
+  <Card
+    title="Type-safe field paths"
+    description="Uses Path<TFieldValues> so name autocompletes and refactors with your schema."
+  />
+  <Card
+    title="Auto-generated labels"
+    description="Derives a human-readable label from the field name when no label prop is provided."
+  />
+  <Card
+    title="Built-in error display"
+    description="Reads field state from useFormContext and renders FieldError automatically."
+  />
+  <Card
+    title="Password visibility toggle"
+    description="Renders an accessible show/hide button when type='password'."
+  />
+  <Card
+    title="Numeric coercion"
+    description="Opt-in returnAsNumber prop coerces values via setValueAs, with empty/NaN → null."
+  />
+  <Card
+    title="RTL-ready layout"
+    description="Logical inset utilities (ps-*, pe-*, inset-s-*, inset-e-*) work in LTR and RTL."
+  />
+</Cards>
+
+## Usage
+
+Import the component and render it inside a `FormProvider`:
+
+```tsx
+import { useForm, FormProvider } from "react-hook-form"
+import { GenericInput } from "@/components/ui/generic-input"
+
+type MyFormValues = {
+  email: string
+}
+
+function MyForm() {
+  const form = useForm<MyFormValues>({
+    defaultValues: { email: "" },
+  })
+
+  return (
+    <FormProvider {...form}>
+      <form onSubmit={form.handleSubmit(console.log)}>
+        <GenericInput<MyFormValues> name="email" required />
+        <button type="submit">Submit</button>
+      </form>
+    </FormProvider>
+  )
+}
+```
+
+---
+
+## Examples
+
+### Basic
+
+Auto-generated labels, explicit labels, descriptions, and optional annotations.
+
+<Tabs items={["Preview", "Code"]}>
+  <Tab value="Preview" className="flex h-[500px] items-center justify-center overflow-auto px-4">
+    <div className="w-full">
+      <GenericInputBasic />
+    </div>
+  </Tab>
+  <Tab value="Code">
+
+```tsx file="generic-input-basic.tsx"
+"use client"
+
+import { useForm, FormProvider } from "react-hook-form"
+import { GenericInput } from "@/registry/new-york/ui/generic-input/generic-input"
+import { Button } from "@/components/ui/button"
+
+type ContactFormValues = {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+}
+
+export default function GenericInputBasic() {
+  const form = useForm<ContactFormValues>({
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+    },
+  })
+
+  function onSubmit(data: ContactFormValues) {
+    console.log("Form submitted:", data)
+  }
+
+  return (
+    <FormProvider {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="mx-auto flex w-full max-w-md flex-col gap-4"
+      >
+        {/* Auto-generated label from field name ("firstName" → "First Name") */}
+        <GenericInput<ContactFormValues> name="firstName" required />
+
+        {/* Explicit label override */}
+        <GenericInput<ContactFormValues> name="lastName" label="Family Name" required />
+
+        {/* With description text */}
+        <GenericInput<ContactFormValues>
+          name="email"
+          type="email"
+          required
+          description="We'll never share your email with anyone else."
+        />
+
+        {/* Optional field with opt-in label */}
+        <GenericInput<ContactFormValues>
+          name="phone"
+          type="tel"
+          optionalLabel="Optional"
+          placeholder="+1 (555) 000-0000"
+        />
+
+        <Button type="submit" className="w-full">Submit</Button>
+      </form>
+    </FormProvider>
+  )
+}
+```
+
+  </Tab>
+</Tabs>
+
+### Auto-generated labels
+
+When no `label` prop is provided, `GenericInput` derives one from the field path. Camel-case, snake-case, kebab-case, and array indices are all handled.
+
+| `name`              | Auto label       |
+| ------------------- | ---------------- |
+| `email`             | `Email`          |
+| `firstName`         | `First Name`     |
+| `user_name`         | `User Name`      |
+| `address-line-1`    | `Address Line 1` |
+| `items.0.firstName` | `First Name`     |
+
+<Callout type="warn">
+  Auto-generation is a convenience for prototypes and obvious cases. Always pass an explicit `label`
+  for production fields where the field path may not translate cleanly.
+</Callout>
+
+### Password field visibility toggle
+
+When `type="password"`, `GenericInput` renders a built-in visibility toggle button with configurable accessible labels.
+
+<Tabs items={["Preview", "Code"]}>
+  <Tab value="Preview" className="flex h-[500px] items-center justify-center overflow-auto px-4">
+    <div className="w-full">
+      <GenericInputPassword />
+    </div>
+  </Tab>
+
+  <Tab value="Code">
+
+```tsx file="generic-input-password.tsx"
+"use client"
+
+import { FormProvider, useForm } from "react-hook-form"
+
+import { FieldGroup } from "@/components/ui/field"
+import { GenericInput } from "@/registry/new-york/ui/generic-input/generic-input"
+import { Button } from "@/components/ui/button"
+
+export default function GenericInputPassword() {
+  const form = useForm<{ password: string }>({
+    defaultValues: { password: "" },
+  })
+
+  return (
+    <FormProvider {...form}>
+      <form
+        className="mx-auto flex w-full max-w-md flex-col gap-4"
+        onSubmit={form.handleSubmit(() => undefined)}
+      >
+        <FieldGroup>
+          <GenericInput
+            name="password"
+            type="password"
+            label="Password"
+            placeholder="Enter a strong password"
+            description="The built-in toggle swaps between masked and unmasked text while keeping the input registered."
+            showPasswordLabel="Show password"
+            hidePasswordLabel="Hide password"
+            required
+          />
+        </FieldGroup>
+
+        <Button type="submit" className="w-full">
+          Create account
+        </Button>
+      </form>
+    </FormProvider>
+  )
+}
+```
+
+  </Tab>
+</Tabs>
+
+### With a leading icon
+
+Any React node can be rendered as a leading icon. The component automatically applies `ps-10` to the input.
+
+<Tabs items={["Preview", "Code"]}>
+  <Tab value="Preview" className="flex h-[500px] items-center justify-center overflow-auto px-4">
+    <div className="w-full">
+      <GenericInputIcon />
+    </div>
+  </Tab>
+  <Tab value="Code">
+
+```tsx file="generic-input-icon.tsx"
+"use client"
+
+import { useForm, FormProvider } from "react-hook-form"
+import { Mail } from "lucide-react"
+import { GenericInput } from "@/registry/new-york/ui/generic-input/generic-input"
+import { Button } from "@/components/ui/button"
+
+type FormValues = {
+  email: string
+}
+
+export default function GenericInputIcon() {
+  const form = useForm<FormValues>({
+    defaultValues: {
+      email: "",
+    },
+  })
+
+  return (
+    <FormProvider {...form}>
+      <form
+        onSubmit={form.handleSubmit(() => undefined)}
+        className="mx-auto flex w-full max-w-md flex-col gap-4"
+      >
+        <GenericInput<FormValues>
+          name="email"
+          type="email"
+          icon={<Mail className="size-4" />}
+          required
+        />
+        <Button type="submit" className="w-full">
+          Submit
+        </Button>
+      </form>
+    </FormProvider>
+  )
+}
+```
+
+  </Tab>
+</Tabs>
+
+### Numeric coercion
+
+By default react-hook-form returns strings from native `<input>` elements. Pass `returnAsNumber` to coerce the value to a `number` via `setValueAs`. Empty strings and `NaN` resolve to `null`.
+
+<Tabs items={["Preview", "Code"]}>
+  <Tab value="Preview" className="flex h-[500px] items-center justify-center overflow-auto px-4">
+    <div className="w-full">
+      <GenericInputNumeric />
+    </div>
+  </Tab>
+  <Tab value="Code">
+
+```tsx file="generic-input-numeric.tsx"
+"use client"
+
+import { FormProvider, useForm } from "react-hook-form"
+import { GenericInput } from "@/registry/new-york/ui/generic-input/generic-input"
+import { Button } from "@/components/ui/button"
+
+type FormValues = {
+  age: number | null
+}
+
+export default function GenericInputNumeric() {
+  const form = useForm<FormValues>({
+    defaultValues: { age: null },
+  })
+
+  return (
+    <FormProvider {...form}>
+      <form
+        onSubmit={form.handleSubmit(() => undefined)}
+        className="mx-auto flex w-full max-w-md flex-col gap-4"
+      >
+        <GenericInput<FormValues>
+          name="age"
+          type="number"
+          label="Age"
+          placeholder="42"
+          step="1"
+          min={0}
+          returnAsNumber
+          description="With returnAsNumber enabled, empty and invalid values resolve to null instead of an empty string."
+        />
+        <Button type="submit" className="w-full">
+          Submit
+        </Button>
+      </form>
+    </FormProvider>
+  )
+}
+```
+
+  </Tab>
+</Tabs>
+
+| Raw input value | `returnAsNumber` value |
+| --------------- | ---------------------- |
+| `"42"`          | `42`                   |
+| `""`            | `null`                 |
+| `"  "`          | `null`                 |
+| `"abc"`         | `null`                 |
+
+### With Zod validation
+
+<Tabs items={["Preview", "Code"]}>
+  <Tab value="Preview" className="flex h-[500px] items-center justify-center overflow-auto px-4">
+    <div className="w-full">
+      <GenericInputZod />
+    </div>
+  </Tab>
+  <Tab value="Code">
+
+```tsx file="generic-input-zod.tsx"
+"use client"
+
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
+import { FormProvider, useForm } from "react-hook-form"
+import { z } from "zod"
+
+import { Button } from "@/components/ui/button"
+import { FieldGroup } from "@/components/ui/field"
+import { GenericInput } from "@/registry/new-york/ui/generic-input/generic-input"
+
+const schema = z.object({
+  email: z.email("Please enter a valid email."),
+  password: z.string().min(8, "Must be at least 8 characters."),
+})
+
+type FormValues = z.infer<typeof schema>
+
+export default function GenericInputZod() {
+  const form = useForm<FormValues>({
+    resolver: standardSchemaResolver(schema),
+    defaultValues: { email: "", password: "" },
+  })
+
+  return (
+    <FormProvider {...form}>
+      <form
+        onSubmit={form.handleSubmit(console.log)}
+        className="mx-auto flex w-full max-w-md flex-col gap-4"
+      >
+        <FieldGroup>
+          <GenericInput<FormValues> name="email" type="email" required />
+          <GenericInput<FormValues> name="password" type="password" required />
+          <Button type="submit" className="w-full">
+            Sign in
+          </Button>
+        </FieldGroup>
+      </form>
+    </FormProvider>
+  )
+}
+```
+
+  </Tab>
+</Tabs>
+
+Errors from the resolver are read via `useFormContext().getFieldState(name, formState)` and rendered with `<FieldError />` automatically — no manual error wiring required.
+
+### Nested and array field paths
+
+`name` is typed as `Path<TFieldValues>`, so deeply nested paths and array indices are autocompleted and type-checked.
+
+```tsx
+type FormValues = {
+  user: { profile: { firstName: string } }
+  items: { sku: string; quantity: number }[]
+}
+
+<GenericInput<FormValues> name="user.profile.firstName" required />
+<GenericInput<FormValues> name="items.0.sku" label="SKU" required />
+<GenericInput<FormValues> name="items.0.quantity" type="number" returnAsNumber required />
+```
+
+### Forwarding a ref
+
+`GenericInput` merges any externally-supplied `ref` with react-hook-form's internal `register` ref using a `mergeRefs` helper.
+
+```tsx
+const inputRef = React.useRef<HTMLInputElement>(null)
+
+<GenericInput<FormValues> ref={inputRef} name="email" />
+
+// Later:
+inputRef.current?.focus()
+```
+
+## API Reference
+
+`GenericInput` extends every native `<input>` prop except `name`, `onChange`,
+and `onBlur`, which are managed via react-hook-form's `register()`. The
+forwarded versions of `onChange` / `onBlur` keep the same `register` semantics.
+
+### Props
+
+<div className="hidden md:block">
+  <div className="overflow-x-auto">
+    <table className="w-full text-sm">
+      <thead>
+        <tr>
+          <th className="text-left">Prop</th>
+          <th className="text-left">Type</th>
+          <th className="text-left">Default</th>
+          <th className="text-left">Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>name</code></td>
+          <td><code>Path&lt;TFieldValues&gt;</code></td>
+          <td>-</td>
+          <td><strong>Required.</strong> Type-safe field path within the surrounding form.</td>
+        </tr>
+        <tr>
+          <td><code>label</code></td>
+          <td><code>React.ReactNode</code></td>
+          <td>derived from <code>name</code></td>
+          <td>Field label. Falls back to a humanized version of <code>name</code>.</td>
+        </tr>
+        <tr>
+          <td><code>description</code></td>
+          <td><code>React.ReactNode</code></td>
+          <td><code>undefined</code></td>
+          <td>
+            Helper text rendered via <code>{"<FieldDescription />"}</code> and linked through
+            <code>aria-describedby</code>.
+          </td>
+        </tr>
+        <tr>
+          <td><code>required</code></td>
+          <td><code>boolean</code></td>
+          <td><code>false</code></td>
+          <td>
+            Marks the field as required, renders a red <code>*</code>, sets <code>aria-required</code>,
+            and forwards to <code>register()</code>.
+          </td>
+        </tr>
+        <tr>
+          <td><code>optionalLabel</code></td>
+          <td><code>React.ReactNode | null</code></td>
+          <td><code>null</code></td>
+          <td>Label appended for non-required fields. Pass <code>null</code> or <code>""</code> to suppress.</td>
+        </tr>
+        <tr>
+          <td><code>disabled</code></td>
+          <td><code>boolean</code></td>
+          <td><code>false</code></td>
+          <td>Visually disables the input but keeps its value in form state and on submit.</td>
+        </tr>
+        <tr>
+          <td><code>returnAsNumber</code></td>
+          <td><code>boolean</code></td>
+          <td><code>false</code></td>
+          <td>Coerces the value to <code>number</code> via <code>setValueAs</code>. Empty / non-numeric -> <code>null</code>.</td>
+        </tr>
+        <tr>
+          <td><code>icon</code></td>
+          <td><code>React.ReactNode</code></td>
+          <td><code>undefined</code></td>
+          <td>Leading icon node. Padding (<code>ps-10</code>) is applied automatically.</td>
+        </tr>
+        <tr>
+          <td><code>type</code></td>
+          <td><code>React.HTMLInputTypeAttribute</code></td>
+          <td><code>"text"</code></td>
+          <td>Native input type. Setting <code>"password"</code> enables the visibility toggle.</td>
+        </tr>
+        <tr>
+          <td><code>showPasswordLabel</code></td>
+          <td><code>string</code></td>
+          <td><code>"Show password"</code></td>
+          <td><code>aria-label</code> for the toggle when the password is hidden.</td>
+        </tr>
+        <tr>
+          <td><code>hidePasswordLabel</code></td>
+          <td><code>string</code></td>
+          <td><code>"Hide password"</code></td>
+          <td><code>aria-label</code> for the toggle when the password is visible.</td>
+        </tr>
+        <tr>
+          <td><code>id</code></td>
+          <td><code>string</code></td>
+          <td><code>name</code></td>
+          <td>Override the input's <code>id</code>. Defaults to the field name.</td>
+        </tr>
+        <tr>
+          <td><code>className</code></td>
+          <td><code>string</code></td>
+          <td><code>undefined</code></td>
+          <td>Merged onto the underlying <code>{"<Input />"}</code> via <code>cn</code>.</td>
+        </tr>
+        <tr>
+          <td><code>onChange</code></td>
+          <td><code>React.ChangeEventHandler&lt;HTMLInputElement&gt;</code></td>
+          <td><code>undefined</code></td>
+          <td>Forwarded to react-hook-form's <code>register({"{ onChange }"})</code>.</td>
+        </tr>
+        <tr>
+          <td><code>onBlur</code></td>
+          <td><code>React.FocusEventHandler&lt;HTMLInputElement&gt;</code></td>
+          <td><code>undefined</code></td>
+          <td>Forwarded to react-hook-form's <code>register({"{ onBlur }"})</code>.</td>
+        </tr>
+        <tr>
+          <td><code>ref</code></td>
+          <td><code>React.Ref&lt;HTMLInputElement&gt;</code></td>
+          <td><code>undefined</code></td>
+          <td>Merged with react-hook-form's internal ref via an internal <code>mergeRefs</code> helper.</td>
+        </tr>
+        <tr>
+          <td><code>...inputProps</code></td>
+          <td>Native <code>{"<input>"}</code> attributes</td>
+          <td>-</td>
+          <td>
+            Anything else accepted by <code>{"<input>"}</code> (e.g. <code>placeholder</code>,
+            <code>autoComplete</code>, <code>inputMode</code>, <code>min</code>, <code>max</code>,
+            <code>pattern</code>, ...).
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div className="md:hidden">
+  <TypeTable
+    type={{
+      name: {
+        description:
+          "Type-safe react-hook-form field path. Used for register(), label auto-generation, and the default id.",
+        type: "Path<TFieldValues>",
+        required: true,
+      },
+      label: {
+        description:
+          "Label rendered inside <FieldLabel>. Falls back to a humanised version of name when omitted.",
+        type: "React.ReactNode",
+        default: "Auto-generated from name",
+      },
+      description: {
+        description: "Helper text rendered as <FieldDescription> and wired to aria-describedby.",
+        type: "React.ReactNode",
+      },
+      required: {
+        description:
+          "Marks the field required. Renders a red * next to the label, sets aria-required, and forwards required: true to register().",
+        type: "boolean",
+        default: "false",
+      },
+      optionalLabel: {
+        description:
+          "Annotation appended to the label when not required. Pass null (default) or '' to suppress. Common values: 'Optional', '(optional)'.",
+        type: "React.ReactNode | null",
+        default: "null",
+      },
+      disabled: {
+        description:
+          "Sets the native disabled attribute. Unlike register()'s disabled, the value is preserved in form state on submit.",
+        type: "boolean",
+        default: "false",
+      },
+      returnAsNumber: {
+        description:
+          "When true, coerces the value to a number via setValueAs. Empty / non-numeric values resolve to null.",
+        type: "boolean",
+        default: "false",
+      },
+      icon: {
+        description:
+          "Leading icon rendered inside the input. Automatically pads the input start with ps-10.",
+        type: "React.ReactNode",
+      },
+      type: {
+        description: "Native input type. When 'password', a visibility toggle is rendered.",
+        type: "React.HTMLInputTypeAttribute",
+        default: "'text'",
+      },
+      showPasswordLabel: {
+        description: "aria-label for the visibility toggle when the password is hidden.",
+        type: "string",
+        default: "'Show password'",
+      },
+      hidePasswordLabel: {
+        description: "aria-label for the visibility toggle when the password is visible.",
+        type: "string",
+        default: "'Hide password'",
+      },
+      onChange: {
+        description:
+          "Forwarded to react-hook-form's register({ onChange }). Called after RHF processes the change.",
+        type: "React.ChangeEventHandler<HTMLInputElement>",
+      },
+      onBlur: {
+        description: "Forwarded to react-hook-form's register({ onBlur }).",
+        type: "React.FocusEventHandler<HTMLInputElement>",
+      },
+      id: {
+        description:
+          "Explicit DOM id. Defaults to the field name. Used for the label's htmlFor and aria-describedby references.",
+        type: "string",
+        default: "name",
+      },
+      ref: {
+        description: "Forwarded ref. Merged with react-hook-form's internal register ref.",
+        type: "React.Ref<HTMLInputElement>",
+      },
+      className: {
+        description:
+          "Merged onto the underlying <Input> via cn() after icon/password padding classes.",
+        type: "string",
+      },
+    }}
+  />
+</div>
+
+In addition, any other native `<input>` prop (e.g. `placeholder`, `autoComplete`, `inputMode`,
+`min`, `max`, `step`, `pattern`) is forwarded to the underlying `<Input>` element.
+
+### Data attributes
+
+These attributes are set on the wrapping `<Field>` and can be targeted from CSS.
+
+| Attribute         | Value            | Description                                    |
+| ----------------- | ---------------- | ---------------------------------------------- |
+| `[data-disabled]` | `true` \| absent | Present when the input is disabled.            |
+| `[data-invalid]`  | `true` \| absent | Present when the field has a validation error. |
+
+## Styling
+
+`GenericInput` is unstyled beyond what shadcn/ui's `Field` and `Input` provide.
+Customize through any of these layers:
+
+### 1. The `className` prop
+
+`className` is merged via `cn()` onto the underlying `<Input>`. Use this to
+tweak per-instance styling:
+
+```tsx
+<GenericInput<Values> name="email" className="font-mono tracking-wide" />
+```
+
+### 2. Tailwind on the surrounding markup
+
+Wrap `GenericInput` in a layout container — `Field` already manages its own
+internal vertical rhythm, so prefer `space-y-*` / grid on the parent rather than
+overriding the field internals.
+
+```tsx
+<div className="grid gap-4 md:grid-cols-2">
+  <GenericInput<Values> name="firstName" />
+  <GenericInput<Values> name="lastName" />
+</div>
+```
+
+### 3. Theming via shadcn/ui tokens
+
+Colors are sourced from your shadcn/ui theme (`--destructive`,
+`--muted-foreground`, `--foreground`, …). Update your CSS variables and the
+component re-themes automatically — no overrides required.
+
+### 4. Data-attribute selectors
+
+Style invalid or disabled states centrally without prop drilling:
+
+```css
+[data-slot="field"][data-invalid] [data-slot="input"] {
+  box-shadow: 0 0 0 2px var(--destructive);
+}
+```
+
+### 5. RTL support
+
+Padding for the leading icon and password toggle uses logical properties (`ps-10`, `pe-10`, `inset-s-3`, `inset-e-3`) and works correctly in both LTR and RTL layouts when `dir="rtl"` is set on a parent.
+
+<Callout type="info">
+  Logical inset utilities (`inset-s-*`, `inset-e-*`) require Tailwind CSS v4. If you're on v3,
+  replace them with `left-*`/`right-*` after copying the source.
+</Callout>
+
+### 6. Forking the component
+
+Because the component lives in your own codebase (it's a registry component,
+not a package), you can fork it freely — change the password icons, swap the
+required marker, add a trailing slot, etc.
+
+## Accessibility
+
+Built on shadcn's `<Field />` primitives, which follow the WAI-ARIA [form-field](https://www.w3.org/WAI/ARIA/apg/patterns/) authoring practices.
+
+- **Label association.** The `<FieldLabel>` is wired to the input via `htmlFor={id}`. Clicking the label focuses the input.
+- **Required state.** When `required` is `true`, the input receives `aria-required="true"` and the visual asterisk is exposed to assistive tech as `aria-label="required"`.
+- **Optional state.** When `optionalLabel` is rendered, it is exposed as `aria-label="optional"`.
+- **Description and error.** When `description` and/or a validation error are present, both ids are joined into `aria-describedby`, so screen readers announce them after the label.
+- **Validation state.** On error, the input receives `aria-invalid="true"` and the parent `<Field>` gets `data-invalid` for styling hooks.
+- **Password toggle.** A real `<button type="button">` with `aria-label` reflecting the current state, `aria-pressed` reflecting the toggled state, and `aria-controls` pointing at the input id. It is disabled in lockstep with the input.
+
+### Keyboard interactions
+
+| Key           | Description                                                                                  |
+| ------------- | -------------------------------------------------------------------------------------------- |
+| `Tab`         | Moves focus into the input, then to the password toggle (when present).                      |
+| `Shift + Tab` | Moves focus in reverse.                                                                      |
+| `Enter`       | When focused on the password toggle, toggles visibility. Inside the input, submits the form. |
+| `Space`       | When focused on the password toggle, toggles visibility.                                     |
+
+## Notes
+
+### Disabled state behavior
+
+The `disabled` prop on `GenericInput` works differently from react-hook-form's native `disabled` option:
+
+| Approach                     | HTML disabled | Value in `formState`  | Included on submit |
+| ---------------------------- | ------------- | --------------------- | ------------------ |
+| `GenericInput disabled`      | ✅            | ✅ Preserved          | ✅ Yes             |
+| RHF `register({ disabled })` | ✅            | ❌ Set to `undefined` | ❌ No              |
+
+This is intentional — it allows you to visually disable inputs (e.g., "coming soon" fields) while preserving their values for pre-filled data or hidden defaults.
