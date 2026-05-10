@@ -4,9 +4,15 @@ import { Inter } from "next/font/google"
 import { headers } from "next/headers"
 import { connection } from "next/server"
 
+import type { Metadata } from "next"
+
 const inter = Inter({
   subsets: ["latin"],
 })
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://shadcn-registry.izakcode.com"),
+}
 
 export default async function Layout({ children }: LayoutProps<"/">) {
   // Nonce-based CSP requires request-time rendering so Next can attach the
