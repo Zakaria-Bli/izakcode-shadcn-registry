@@ -15,6 +15,7 @@ const securityHeaders = buildSecurityHeaders()
 const ogImageHeaders = [{ key: "Cross-Origin-Resource-Policy", value: "cross-origin" }]
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   reactStrictMode: true,
 
   async headers() {
