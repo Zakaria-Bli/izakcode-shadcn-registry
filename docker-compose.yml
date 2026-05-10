@@ -1,0 +1,27 @@
+# Dokploy can route directly to the exposed container port.
+# For local Docker development:
+# - Change target to: dev
+# - Set NODE_ENV=development
+# - Publish the app port:
+#   ports:
+#     - "3000:3000"
+# - Add these volumes to the service:
+#   volumes:
+#     - .:/app
+#     - /app/node_modules
+#     - /app/.next
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+      args:
+        # NEXT_PUBLIC_* are baked into the client bundle at build time.
+        # In Dokploy, set these as Build-time Variables on the service.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
+    expose:
+      - "3000"
+    environment:
+      NODE_ENV: production
