@@ -27,7 +27,7 @@ import GenericInputZod from "@/registry/new-york/ui/generic-input/examples/gener
 import { useForm, FormProvider } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
-import { GenericInput } from "@/registry/new-york/ui/generic-input/generic-input"
+import { GenericInput } from "@/components/ui/generic-input"
 
 interface FormValues {
   username: string
@@ -78,8 +78,25 @@ export default function GenericInputDemo() {
 <Tabs items={['CLI', 'Manual']} type="underlined" className="border-0 bg-transparent shadow-none p-0">
   <Tab value="CLI">
 
+If you have this registry configured in `components.json`:
+
+````json
+{
+  "registries": {
+    "@izakcode": "https://shadcn.izakcode.com/r/{name}.json"
+  }
+}
+
+Install the component with the shadcn CLI:
+
 ```package-install
 npx shadcn@latest add @izakcode/generic-input
+````
+
+You can also install it directly by URL:
+
+```package-install
+npx shadcn@latest add https://shadcn.izakcode.com/r/generic-input.json
 ```
 
   </Tab>
@@ -296,7 +313,7 @@ export function GenericInput<TFieldValues extends FieldValues>({
 
       <div className="relative">
         {icon ? (
-          <div className="text-muted-foreground pointer-events-none absolute inset-s-3 top-1/2 -translate-y-1/2">
+          <div className="text-muted-foreground inset-s-3 pointer-events-none absolute top-1/2 -translate-y-1/2">
             {icon}
           </div>
         ) : null}
@@ -317,7 +334,7 @@ export function GenericInput<TFieldValues extends FieldValues>({
             type="button"
             onClick={togglePassword}
             disabled={disabled}
-            className="text-muted-foreground hover:text-foreground absolute inset-e-3 top-1/2 -translate-y-1/2 transition-colors disabled:pointer-events-none disabled:opacity-50"
+            className="text-muted-foreground hover:text-foreground inset-e-3 absolute top-1/2 -translate-y-1/2 transition-colors disabled:pointer-events-none disabled:opacity-50"
             aria-label={showPassword ? hidePasswordLabel : showPasswordLabel}
             aria-pressed={showPassword}
             aria-controls={inputId}
@@ -418,7 +435,7 @@ Auto-generated labels, explicit labels, descriptions, and optional annotations.
 "use client"
 
 import { useForm, FormProvider } from "react-hook-form"
-import { GenericInput } from "@/registry/new-york/ui/generic-input/generic-input"
+import { GenericInput } from "@/components/ui/generic-input"
 import { Button } from "@/components/ui/button"
 
 type ContactFormValues = {
@@ -470,7 +487,9 @@ export default function GenericInputBasic() {
           placeholder="+1 (555) 000-0000"
         />
 
-        <Button type="submit" className="w-full">Submit</Button>
+        <Button type="submit" className="w-full">
+          Submit
+        </Button>
       </form>
     </FormProvider>
   )
@@ -516,7 +535,7 @@ When `type="password"`, `GenericInput` renders a built-in visibility toggle butt
 import { FormProvider, useForm } from "react-hook-form"
 
 import { FieldGroup } from "@/components/ui/field"
-import { GenericInput } from "@/registry/new-york/ui/generic-input/generic-input"
+import { GenericInput } from "@/components/ui/generic-input"
 import { Button } from "@/components/ui/button"
 
 export default function GenericInputPassword() {
@@ -572,7 +591,7 @@ Any React node can be rendered as a leading icon. The component automatically ap
 
 import { useForm, FormProvider } from "react-hook-form"
 import { Mail } from "lucide-react"
-import { GenericInput } from "@/registry/new-york/ui/generic-input/generic-input"
+import { GenericInput } from "@/components/ui/generic-input"
 import { Button } from "@/components/ui/button"
 
 type FormValues = {
@@ -626,7 +645,7 @@ By default react-hook-form returns strings from native `<input>` elements. Pass 
 "use client"
 
 import { FormProvider, useForm } from "react-hook-form"
-import { GenericInput } from "@/registry/new-york/ui/generic-input/generic-input"
+import { GenericInput } from "@/components/ui/generic-input"
 import { Button } from "@/components/ui/button"
 
 type FormValues = {
@@ -692,7 +711,7 @@ import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { FieldGroup } from "@/components/ui/field"
-import { GenericInput } from "@/registry/new-york/ui/generic-input/generic-input"
+import { GenericInput } from "@/components/ui/generic-input"
 
 const schema = z.object({
   email: z.email("Please enter a valid email."),

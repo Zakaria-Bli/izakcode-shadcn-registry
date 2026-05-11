@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry.json",
   "name": "izakcode",
-  "homepage": "https://shadcn-registry.izakcode.com",
+  "homepage": "https://shadcn.izakcode.com",
   "items": [
     {
       "name": "generic-input",
@@ -13,7 +13,8 @@
       "files": [
         {
           "path": "src/registry/new-york/ui/generic-input/generic-input.tsx",
-          "type": "registry:ui"
+          "type": "registry:ui",
+          "target": "components/ui/generic-input.tsx"
         }
       ],
       "categories": ["forms", "input"]
