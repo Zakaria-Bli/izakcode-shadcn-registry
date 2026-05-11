@@ -19,6 +19,6 @@
   },
   "iconLibrary": "lucide",
   "registries": {
-    "@izakcode": "https://shadcn-registry.izakcode.com/r/{name}.json"
+    "@izakcode": "https://shadcn.izakcode.com/r/{name}.json"
   }
 }

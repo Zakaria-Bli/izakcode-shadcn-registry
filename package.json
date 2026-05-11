@@ -2,7 +2,7 @@
   "name": "izakcode-shadcn-registry",
   "version": "0.0.0",
   "description": "A custom shadcn registry for iZakcode components, blocks, and examples.",
-  "homepage": "https://shadcn-registry.izakcode.com",
+  "homepage": "https://shadcn.izakcode.com",
   "private": true,
   "scripts": {
     "build": "next build",

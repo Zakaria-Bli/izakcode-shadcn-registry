@@ -11,7 +11,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://shadcn-registry.izakcode.com"),
+  metadataBase: new URL("https://shadcn.izakcode.com"),
 }
 
 export default async function Layout({ children }: LayoutProps<"/">) {
